@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from datetime import datetime
+import secrets
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -54,3 +56,11 @@ def create_refresh_token(data: dict):
     expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+def create_refresh_token():
+    return secrets.token_urlsafe(32)
+
+def is_token_expired(expires_at: datetime):
+    return datetime.now() > expires_at
