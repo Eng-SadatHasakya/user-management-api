@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from .. import models, schemas, crud
 from ..database import get_db
-from ..auth import verify_password, create_access_token, get_current_user, require_admin
+from ..auth import ALGORITHM, SECRET_KEY, create_refresh_token, verify_password, create_access_token, get_current_user, require_admin
 from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
@@ -21,18 +22,16 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 #Public -login
 @router.post("/login/")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-    if not verify_password(form_data.password, db_user.password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+    user = crud.get_user_by_email(db, form_data.username)
 
-    #Include role in token
-    access_token = create_access_token(data={
-        "sub": db_user.email,
-        "role": db_user.role
-    })
-    return {"access_token": access_token, "token_type": "bearer"}
+    if not user or not verify_password(form_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token(data={"sub": user.email, "role": user.role})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
+    
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 #Admin only - get all users
 @router.get("/users/", response_model=list[schemas.UserResponse])
@@ -56,4 +55,18 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict 
 
     #Generate and return JWT token
     access_token = create_access_token(data={"sub": db_user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+@router.post("/refresh/")
+def refresh_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        
+        new_access_token = create_access_token(data={"sub": email})
+        return {"access_token": new_access_token, "token_type": "bearer"}
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")

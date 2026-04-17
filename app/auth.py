@@ -16,7 +16,8 @@ def verify_password(plain_password, hashed_password):
 # JWT Config
 SECRET_KEY = "your_secret_key_here_change_this"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -47,3 +48,9 @@ def require_admin(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admins only")
     return current_user
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
