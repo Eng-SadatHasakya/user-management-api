@@ -1,9 +1,0 @@
-2026-04-18 03:26:30,589 - INFO - User musa@example.com logged in successfully
-2026-04-18 03:43:27,661 - WARNING - email-validator not installed, email fields will be treated as str.
-To install, run: pip install email-validator
-2026-04-18 03:48:58,780 - WARNING - email-validator not installed, email fields will be treated as str.
-To install, run: pip install email-validator
-2026-04-18 12:55:14,203 - WARNING - email-validator not installed, email fields will be treated as str.
-To install, run: pip install email-validator
-2026-04-18 13:07:37,844 - WARNING - email-validator not installed, email fields will be treated as str.
-To install, run: pip install email-validator
