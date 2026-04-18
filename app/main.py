@@ -7,7 +7,6 @@ from slowapi.errors import RateLimitExceeded
 from .database import engine, Base
 from .routers import user
 
-# ✅ Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -18,7 +17,30 @@ logging.basicConfig(
 )
 
 limiter = Limiter(key_func=get_remote_address)
-app = FastAPI()
+
+app = FastAPI(
+    title="User Management API",
+    description="""
+## A production-grade REST API
+
+### Features:
+- ✅ JWT Authentication
+- ✅ Role-Based Access Control (Admin / User)
+- ✅ Refresh Tokens
+- ✅ Rate Limiting
+- ✅ Audit Logging
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Eng. Sadat Hasakya",
+        "email": "hersacemusasadat@gmail.com",
+        "url": "https://github.com/hersacemusasadat"
+    },
+    license_info={
+        "name": "MIT"
+    }
+)
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -32,3 +54,10 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 app.include_router(user.router)
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def landing():
+    with open("app/landing.html", "r", encoding="utf-8") as f:
+        return f.read()

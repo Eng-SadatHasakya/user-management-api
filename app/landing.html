@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Management API</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;
+    --accent:#6c63ff;--accent2:#00d4aa;--accent3:#ff6b6b;
+    --text:#f0f0f0;--muted:#888;--border:rgba(255,255,255,0.08);
+  }
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(108,99,255,0.15) 0%,transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none}
+  .hero::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(0,212,170,0.1) 0%,transparent 70%);bottom:-50px;right:10%;pointer-events:none}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);color:#a89fff;padding:6px 14px;border-radius:100px;font-size:12px;font-family:'DM Mono',monospace;margin-bottom:2rem;animation:fadeUp 0.6s ease both}
+  .badge-dot{width:6px;height:6px;background:#6c63ff;border-radius:50%;animation:pulse 2s infinite}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(2.5rem,6vw,5rem);font-weight:800;line-height:1.05;margin-bottom:1.5rem;animation:fadeUp 0.6s 0.1s ease both}
+  .gradient-text{background:linear-gradient(135deg,#6c63ff,#00d4aa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero-desc{font-size:1.1rem;color:var(--muted);max-width:560px;line-height:1.7;margin-bottom:2.5rem;animation:fadeUp 0.6s 0.2s ease both;font-weight:300}
+  .btn-group{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:fadeUp 0.6s 0.3s ease both}
+  .btn{padding:12px 28px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif}
+  .btn-primary{background:var(--accent);color:#fff;border:none}
+  .btn-primary:hover{background:#7b74ff;transform:translateY(-1px)}
+  .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+  .btn-outline:hover{background:var(--surface);border-color:rgba(255,255,255,0.2)}
+  .stats{display:flex;gap:3rem;margin-top:4rem;animation:fadeUp 0.6s 0.4s ease both}
+  .stat{text-align:center}
+  .stat-num{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:var(--text)}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:2px}
+  .section{padding:5rem 2rem;max-width:1100px;margin:0 auto}
+  .section-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:3px;margin-bottom:1rem}
+  .section-title{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,3vw,2.5rem);font-weight:700;margin-bottom:1rem}
+  .section-desc{color:var(--muted);font-size:1rem;max-width:500px;line-height:1.7;margin-bottom:3rem;font-weight:300}
+  .endpoints-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+  .endpoint{background:var(--surface);padding:1.25rem 1.5rem;transition:background 0.2s}
+  .endpoint:hover{background:var(--surface2)}
+  .ep-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .method{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;min-width:46px;text-align:center}
+  .get{background:rgba(0,212,170,0.15);color:#00d4aa}
+  .post{background:rgba(108,99,255,0.15);color:#a89fff}
+  .delete{background:rgba(255,107,107,0.15);color:#ff6b6b}
+  .ep-path{font-family:'DM Mono',monospace;font-size:13px;color:var(--text)}
+  .ep-desc{font-size:13px;color:var(--muted);line-height:1.5}
+  .ep-tag{font-size:11px;padding:2px 8px;border-radius:100px;margin-top:8px;display:inline-block}
+  .tag-auth{background:rgba(108,99,255,0.1);color:#a89fff;border:1px solid rgba(108,99,255,0.2)}
+  .tag-admin{background:rgba(255,107,107,0.1);color:#ff9f9f;border:1px solid rgba(255,107,107,0.2)}
+  .tag-public{background:rgba(0,212,170,0.1);color:#00d4aa;border:1px solid rgba(0,212,170,0.2)}
+  .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem}
+  .feature{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+  .feature:hover{border-color:rgba(108,99,255,0.3);transform:translateY(-2px)}
+  .feature-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:18px}
+  .feature-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px}
+  .feature-desc{font-size:13px;color:var(--muted);line-height:1.6}
+  .tech-stack{display:flex;flex-wrap:wrap;gap:10px;margin-top:2rem}
+  .tech{background:var(--surface);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);transition:all 0.2s}
+  .tech:hover{border-color:var(--accent);color:var(--accent)}
+  .code-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:2rem}
+  .code-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .code-dots{display:flex;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .d1{background:#ff5f57}.d2{background:#febc2e}.d3{background:#28c840}
+  .code-lang{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+  pre{padding:1.5rem;overflow-x:auto;font-family:'DM Mono',monospace;font-size:13px;line-height:1.7;color:#cdd6f4}
+  .kw{color:#cba6f7}.str{color:#a6e3a1}.fn{color:#89b4fa}.cm{color:#585b70}.num{color:#fab387}
+  .divider{height:1px;background:var(--border);margin:0 2rem}
+  .footer{padding:3rem 2rem;text-align:center;color:var(--muted);font-size:13px}
+  .footer a{color:var(--accent);text-decoration:none}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .grid-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.03;background-image:linear-gradient(var(--text) 1px,transparent 1px),linear-gradient(90deg,var(--text) 1px,transparent 1px);background-size:50px 50px}
+  .content{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="content">
+
+<section class="hero">
+  <div class="badge"><span class="badge-dot"></span> v1.0.0 — Production Ready</div>
+  <h1>User Management<br><span class="gradient-text">API</span></h1>
+  <p class="hero-desc">A production-grade REST API built with FastAPI. JWT authentication, role-based access control, refresh tokens, and audit logging — all in one secure system.</p>
+  <div class="btn-group">
+    <a href="/docs" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Explore Docs
+    </a>
+    <a href="/redoc" class="btn btn-outline">ReDoc Reference</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Endpoints</div></div>
+    <div class="stat"><div class="stat-num">JWT</div><div class="stat-label">Auth Method</div></div>
+    <div class="stat"><div class="stat-num">RBAC</div><div class="stat-label">Access Control</div></div>
+    <div class="stat"><div class="stat-num">REST</div><div class="stat-label">Architecture</div></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-label">Endpoints</div>
+  <div class="section-title">API Reference</div>
+  <p class="section-desc">All available endpoints with their access levels and descriptions.</p>
+  <div class="endpoints-grid">
+    <div class="endpoint">
+      <div class="ep-header"><span class="method post">POST</span><span class="ep-path">/users/</span></div>
+      <div class="ep-desc">Register a new user account with name, email and password.</div>
+      <span class="ep-tag tag-public">Public</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method post">POST</span><span class="ep-path">/login/</span></div>
+      <div class="ep-desc">Authenticate and receive access + refresh tokens. Rate limited to 5/min.</div>
+      <span class="ep-tag tag-public">Public</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method get">GET</span><span class="ep-path">/users/</span></div>
+      <div class="ep-desc">Retrieve a list of all registered users in the system.</div>
+      <span class="ep-tag tag-admin">Admin Only</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method get">GET</span><span class="ep-path">/users/me/</span></div>
+      <div class="ep-desc">Get the currently authenticated user's profile.</div>
+      <span class="ep-tag tag-auth">Authenticated</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method delete">DEL</span><span class="ep-path">/users/{id}</span></div>
+      <div class="ep-desc">Permanently delete a user account from the system.</div>
+      <span class="ep-tag tag-admin">Admin Only</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method post">POST</span><span class="ep-path">/refresh/</span></div>
+      <div class="ep-desc">Exchange a refresh token for a new access token.</div>
+      <span class="ep-tag tag-auth">Authenticated</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method post">POST</span><span class="ep-path">/logout/</span></div>
+      <div class="ep-desc">Revoke the current session's refresh token.</div>
+      <span class="ep-tag tag-auth">Authenticated</span>
+    </div>
+    <div class="endpoint">
+      <div class="ep-header"><span class="method post">POST</span><span class="ep-path">/logout-all/</span></div>
+      <div class="ep-desc">Revoke all active sessions across all devices.</div>
+      <span class="ep-tag tag-auth">Authenticated</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-label">Features</div>
+  <div class="section-title">Built for production</div>
+  <p class="section-desc">Every feature you need to ship a secure, scalable user management system.</p>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(108,99,255,0.15)">🔐</div>
+      <div class="feature-title">JWT Authentication</div>
+      <div class="feature-desc">Stateless authentication with short-lived access tokens and long-lived refresh tokens.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(255,107,107,0.15)">👥</div>
+      <div class="feature-title">Role-Based Access</div>
+      <div class="feature-desc">Admin and user roles with fine-grained endpoint protection via dependency injection.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(0,212,170,0.15)">🔄</div>
+      <div class="feature-title">Refresh Tokens</div>
+      <div class="feature-desc">Secure token rotation stored in PostgreSQL with expiry tracking and revocation support.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(250,188,46,0.15)">⚡</div>
+      <div class="feature-title">Rate Limiting</div>
+      <div class="feature-desc">Brute-force protection on authentication endpoints with SlowAPI middleware.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(108,99,255,0.15)">📋</div>
+      <div class="feature-title">Audit Logging</div>
+      <div class="feature-desc">File and terminal logging for all critical actions including logins and deletions.</div>
+    </div>
+    <div class="feature">
+      <div class="feature-icon" style="background:rgba(0,212,170,0.15)">🗄️</div>
+      <div class="feature-title">Alembic Migrations</div>
+      <div class="feature-desc">Version-controlled database schema changes with automatic migration generation.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-label">Quick Start</div>
+  <div class="section-title">Get started in seconds</div>
+  <p class="section-desc">Login and start making authenticated requests right away.</p>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><div class="dot d1"></div><div class="dot d2"></div><div class="dot d3"></div></div>
+      <span class="code-lang">bash — login example</span>
+    </div>
+    <pre><span class="cm"># 1. Login and get your tokens</span>
+<span class="fn">curl</span> <span class="str">-X POST</span> http://localhost:<span class="num">8000</span>/login/ \
+  <span class="str">-d</span> <span class="str">"username=you@email.com&password=yourpassword"</span>
+
+<span class="cm"># 2. Use the access token on protected routes</span>
+<span class="fn">curl</span> http://localhost:<span class="num">8000</span>/users/me/ \
+  <span class="str">-H</span> <span class="str">"Authorization: Bearer &lt;access_token&gt;"</span>
+
+<span class="cm"># 3. Refresh when access token expires</span>
+<span class="fn">curl</span> <span class="str">-X POST</span> http://localhost:<span class="num">8000</span>/refresh/ \
+  <span class="str">-H</span> <span class="str">"Content-Type: application/json"</span> \
+  <span class="str">-d</span> <span class="str">'{"refresh_token": "&lt;refresh_token&gt;"}'</span></pre>
+  </div>
+  <div class="tech-stack">
+    <span class="tech">FastAPI</span>
+    <span class="tech">PostgreSQL</span>
+    <span class="tech">SQLAlchemy</span>
+    <span class="tech">Alembic</span>
+    <span class="tech">JWT / Jose</span>
+    <span class="tech">Bcrypt</span>
+    <span class="tech">SlowAPI</span>
+    <span class="tech">Pydantic v2</span>
+    <span class="tech">Uvicorn</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<footer class="footer">
+  Built by <a href="https://github.com/Eng-SadatHasakya">Eng. Sadat Hasakya</a> &nbsp;·&nbsp; User Management API v1.0.0 &nbsp;·&nbsp; <a href="/docs">Swagger UI</a> &nbsp;·&nbsp; <a href="/redoc">ReDoc</a>
+</footer>
+
+</div>
+</body>
+</html>

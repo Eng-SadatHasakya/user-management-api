@@ -13,7 +13,7 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 # Public - anyone can create account
-@router.post("/users/", response_model=schemas.UserResponse)
+@router.post("/users/", response_model=schemas.UserResponse, tags=["Users"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = crud.create_user(db, user)
     if not new_user:
@@ -22,7 +22,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 # Public - login
-@router.post("/login/")
+@router.post("/login/", tags=["Auth"])
 @limiter.limit("5/minute")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == form_data.username).first()
@@ -45,17 +45,17 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
     }
 
 # Admin only - get all users
-@router.get("/users/", response_model=list[schemas.UserResponse])
+@router.get("/users/", response_model=list[schemas.UserResponse], tags=["Users"])
 def read_users(db: Session = Depends(get_db), current_user: dict = Depends(require_admin)):
     return crud.get_users(db)
 
 # Any logged in user - get own profile
-@router.get("/users/me/", response_model=schemas.UserResponse)
+@router.get("/users/me/", response_model=schemas.UserResponse, tags=["Users"])
 def read_user_me(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     return db.query(models.User).filter(models.User.email == current_user["email"]).first()
 
 # Admin only - delete user
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", tags=["Users"])
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict = Depends(require_admin)):
     user = crud.get_user(db, user_id)
     if not user:
@@ -65,7 +65,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: dict 
     return {"message": "Deleted"}
 
 # Refresh access token
-@router.post("/refresh/")
+@router.post("/refresh/", tags=["Auth"])
 def refresh_token(request: schemas.RefreshTokenRequest, db: Session = Depends(get_db)):
     db_token = crud.get_refresh_token(db, request.refresh_token)
     if not db_token:
@@ -77,14 +77,14 @@ def refresh_token(request: schemas.RefreshTokenRequest, db: Session = Depends(ge
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 # Logout - revoke refresh token
-@router.post("/logout/")
+@router.post("/logout/", tags=["Auth"])
 def logout(request: schemas.RefreshTokenRequest, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     crud.delete_refresh_token(db, request.refresh_token)
     logger.info(f"User {current_user['email']} logged out")  # ✅ inside function
     return {"message": "Logged out successfully"}
 
 # Logout from all devices
-@router.post("/logout-all/")
+@router.post("/logout-all/", tags=["Auth"])
 def logout_all(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     crud.delete_all_user_tokens(db, current_user["email"])
     logger.info(f"User {current_user['email']} logged out from all devices")  # ✅ inside function
