@@ -4,6 +4,11 @@ from .. import models, schemas, crud
 from ..database import get_db
 from ..auth import verify_password, create_access_token, create_refresh_token, is_token_expired, get_current_user, require_admin
 from fastapi.security import OAuth2PasswordRequestForm
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from fastapi import Request
+
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter()
 
@@ -17,7 +22,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 # Public - login
 @router.post("/login/")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")  # Limit login attempts to prevent brute-force
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
